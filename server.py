@@ -1,15 +1,15 @@
 from dotenv import load_dotenv
 load_dotenv()
-import os
 
-from flask import Flask, request, jsonify
-import requests
+import os
 import csv
+import requests
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# ✅ Correct way to load environment variables
-CSV_PATH = os.getenv("CSV_PATH")
+# Paths and tokens
+CSV_PATH = os.getenv("CSV_PATH", "asa24_credentials.csv")
 REDCAP_API_URL = os.getenv("REDCAP_API_URL")
 REDCAP_API_TOKEN = os.getenv("REDCAP_API_TOKEN")
 
@@ -23,19 +23,20 @@ def handle_det():
 
     print(f"🔔 Data Entry Trigger received for record #{record_id}")
 
-    # Load credentials from CSV
-    with open(CSV_PATH, newline='', encoding='utf-8') as csvfile:
-        reader = csv.DictReader(csvfile)
-        credentials = list(reader)
+    try:
+        with open(CSV_PATH, newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            credentials = list(reader)
+    except FileNotFoundError:
+        print(f"❌ CSV file not found at {CSV_PATH}")
+        return "CSV file not found", 500
 
-    record_index = int(record_id) - 1
+    try:
+        record_index = int(record_id) - 1
+        cred = credentials[record_index]
+    except (IndexError, ValueError):
+        return f"No credentials available for record #{record_id}", 400
 
-    if record_index >= len(credentials):
-        return f"No more credentials available for record #{record_id}", 400
-
-    cred = credentials[record_index]
-
-    # Prepare data to upload to REDCap
     upload_data = [
         {
             "record_id": record_id,
@@ -59,5 +60,4 @@ def handle_det():
     return jsonify({"status": "success"}), 200
 
 if __name__ == "__main__":
-    # ✅ Render expects host='0.0.0.0' and dynamic port from env
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
