@@ -5,9 +5,9 @@ import os
 
 app = Flask(__name__)
 
-CSV_PATH = r"C:\Users\ottcy007\OneDrive - University of South Australia\Desktop\asa24_credentials.csv"
-REDCAP_API_URL = "https://research.unisa.edu.au/redcap/api/"  # 🔁 Replace this with your actual REDCap API URL
-REDCAP_API_TOKEN = "1A6E8C4C359F939B423353774E9D126D"              # 🔁 Replace this with your API token
+CSV_PATH = "asa24_credentials.csv"  # assumes it's uploaded with your code
+REDCAP_API_URL = "https://research.unisa.edu.au/redcap/api/"
+REDCAP_API_TOKEN = "1A6E8C4C359F939B423353774E9D126D"
 
 @app.route("/", methods=["POST"])
 def handle_det():
@@ -24,14 +24,14 @@ def handle_det():
         reader = csv.DictReader(csvfile)
         credentials = list(reader)
 
-    record_index = int(record_id) - 1  # REDCap record_id usually starts at 1
+    record_index = int(record_id) - 1
 
     if record_index >= len(credentials):
         return f"No more credentials available for record #{record_id}", 400
 
     cred = credentials[record_index]
 
-    # Upload to REDCap
+    # Upload credentials to REDCap
     upload_data = [
         {
             "record_id": record_id,
@@ -55,4 +55,4 @@ def handle_det():
     return jsonify({"status": "success"}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
